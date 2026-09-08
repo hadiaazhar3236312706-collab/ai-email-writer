@@ -3,10 +3,10 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [clientName, setClientName] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [topic, setTopic] = useState("");
+  const [tone, setTone] = useState("Formal");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -15,10 +15,15 @@ export default function Home() {
     setLoading(true);
     setEmail("");
 
+    const formData = new FormData();
+    formData.append("topic", topic);
+    formData.append("tone", tone);
+    if (pdfFile) formData.append("pdf", pdfFile);
+    if (imageFile) formData.append("image", imageFile);
+
     const res = await fetch("/api/generate-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientName, invoiceNumber, amount, dueDate }),
+      body: formData,
     });
 
     const data = await res.json();
@@ -37,54 +42,64 @@ export default function Home() {
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8">
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-slate-800">✉️ AI Email Writer</h1>
-          <p className="text-slate-500 mt-1">Generate a professional invoice reminder in seconds</p>
+          <p className="text-slate-500 mt-1">Describe what you need — the AI writes the email</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Client Name</label>
-            <input
-              placeholder="e.g. Ahmed Khan"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition"
+            <label className="block text-sm font-medium text-slate-600 mb-1">
+              What should this email be about?
+            </label>
+            <textarea
+              placeholder="e.g. Remind Ahmed about invoice #INV-102 for $500, due Aug 25, 2026. Or: Write a thank-you email to a client after a successful project."
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Tone</label>
+            <select
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition bg-white"
+            >
+              <option value="Formal">Formal</option>
+              <option value="Informal">Informal</option>
+              <option value="Friendly">Friendly / Casual</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Invoice Number</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">
+                Attach PDF (optional)
+              </label>
               <input
-                placeholder="INV-102"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition"
+                type="file"
+               accept="application/pdf,.docx"
+                onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Amount</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">
+                Attach Image (optional)
+              </label>
               <input
-                placeholder="$500"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Due Date</label>
-            <input
-              placeholder="August 25, 2026"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 transition"
-            />
           </div>
 
           <button
             onClick={handleGenerate}
-            disabled={loading || !clientName || !invoiceNumber}
+            disabled={loading || !topic}
             className="w-full py-3 rounded-lg bg-slate-800 text-white font-medium hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {loading ? "Generating..." : "Generate Email"}
